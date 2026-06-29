@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!--
+    Title and font are set dynamically by app.js from TRACKER_CONFIG.
+    Hard-coded fallback title below; the JS will override it.
+  -->
+  <title>Whale Tracker</title>
+
+  <style>
+    /*
+     * All brand colors are driven by CSS custom properties.
+     * Default values below match TRACKER_CONFIG.theme —
+     * app.js overwrites these at runtime so config.js is the single source.
+     */
+    :root {
+      --color-primary:  #00f5ff;
+      --color-accent:   #ff006e;
+      --color-purple:   #8338ec;
+      --color-bg-base:  #0a0a0a;
+      --color-bg-mid:   #1a1a2e;
+      --color-bg-deep:  #16213e;
+      --color-text:     #e0e6ed;
+      --font-mono:      'JetBrains Mono', monospace;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-mono);
+      background: linear-gradient(135deg, var(--color-bg-base) 0%, var(--color-bg-mid) 50%, var(--color-bg-deep) 100%);
+      color: var(--color-text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Header ─────────────────────────────────────────────── */
+    .header {
+      padding: 1rem 2rem;
+      border-bottom: 1px solid #333;
+      backdrop-filter: blur(10px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(10, 10, 10, 0.8);
+    }
+
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .logo {
+      font-size: 1.5rem;
+      font-weight: 700;
+      background: linear-gradient(45deg, var(--color-primary), var(--color-accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .nav-menu {
+      display: flex;
+      gap: 2rem;
+      margin-left: auto;
+    }
+
+    .nav-item {
+      padding: 0.5rem 1rem;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .nav-item:hover {
+      border-color: var(--color-primary);
+      background: rgba(0, 245, 255, 0.1);
+    }
+
+    .nav-item.highlight {
+      background: linear-gradient(45deg, var(--color-accent), var(--color-purple));
+    }
+
+    /* ── Main layout ─────────────────────────────────────────── */
+    .main-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    /* ── Hero ────────────────────────────────────────────────── */
+    .hero-section {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    .hero-title {
+      font-size: 3rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      background: linear-gradient(45deg, var(--color-primary), var(--color-accent), var(--color-purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-subtitle {
+      font-size: 1.2rem;
+      opacity: 0.8;
+      margin-bottom: 2rem;
+    }
+
+    /* ── Stats grid ──────────────────────────────────────────── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 3rem;
+    }
+
+    .stat-card {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 1.5rem;
+      text-align: center;
+      transition: transform 0.3s ease;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--color-primary);
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+      opacity: 0.7;
+      font-size: 0.9rem;
+    }
+
+    /* ── Dashboard grid ──────────────────────────────────────── */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1fr 350px;
+      gap: 2rem;
+      margin-bottom: 3rem;
+    }
+
+    .main-panel {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 1.5rem;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .panel-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+
+    /* ── Chain tabs ──────────────────────────────────────────── */
+    .chain-tabs {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .chain-tab {
+      padding: 0.5rem 1rem;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 0.8rem;
+      font-family: var(--font-mono);
+    }
+
+    .chain-tab.active {
+      background: var(--color-primary);
+      color: #000;
+      border-color: var(--color-primary);
+    }
+
+    /* ── Whale list ──────────────────────────────────────────── */
+    .whale-list {
+      max-height: 400px;
+      overflow-y: auto;
+      transition: opacity 0.2s ease;
+    }
+
+    .whale-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      margin-bottom: 0.5rem;
+      transition: all 0.3s ease;
+    }
+
+    .whale-item:hover {
+      border-color: var(--color-primary);
+      background: rgba(0, 245, 255, 0.05);
+    }
+
+    .whale-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .whale-address {
+      font-size: 0.8rem;
+      opacity: 0.7;
+    }
+
+    .whale-amount {
+      font-weight: 600;
+      color: var(--color-primary);
+    }
+
+    .whale-status {
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .status-buy {
+      background: rgba(0, 255, 0, 0.2);
+      color: #00ff00;
+    }
+
+    .status-sell {
+      background: rgba(255, 0, 0, 0.2);
+      color: #ff4757;
+    }
+
+    .status-transfer {
+      background: rgba(255, 165, 0, 0.2);
+      color: #ffa502;
+    }
+
+    /* ── Side panel ──────────────────────────────────────────── */
+    .side-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .ai-insights {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 1.5rem;
+    }
+
+    .insight-item {
+      padding: 1rem;
+      border: 1px solid rgba(0, 245, 255, 0.3);
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      background: rgba(0, 245, 255, 0.05);
+    }
+
+    .insight-score {
+      font-weight: 700;
+      color: var(--color-primary);
+      margin-bottom: 0.5rem;
+    }
+
+    .feature-panel {
+      background: linear-gradient(135deg, rgba(255, 0, 110, 0.1), rgba(131, 56, 236, 0.1));
+      border: 1px solid rgba(255, 0, 110, 0.3);
+      border-radius: 16px;
+      padding: 1.5rem;
+    }
+
+    .feature-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem;
+      border-radius: 8px;
+      margin-bottom: 0.5rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .feature-item:hover {
+      background: rgba(255, 0, 110, 0.1);
+    }
+
+    .badge-soon {
+      font-size: 0.7rem;
+      padding: 0.25rem 0.5rem;
+      background: rgba(255, 165, 0, 0.2);
+      color: #ffa502;
+      border-radius: 4px;
+    }
+
+    /* ── Animations ──────────────────────────────────────────── */
+    .pulse {
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%   { opacity: 1; }
+      50%  { opacity: 0.7; }
+      100% { opacity: 1; }
+    }
+
+    .flow-animation {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .flow-animation::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(90deg, transparent, rgba(0, 245, 255, 0.3), transparent);
+      animation: flow 3s infinite;
+    }
+
+    @keyframes flow {
+      0%   { left: -100%; }
+      100% { left: 100%; }
+    }
+
+    /* ── Modal ───────────────────────────────────────────────── */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(10px);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background: rgba(26, 26, 46, 0.95);
+      border: 1px solid rgba(0, 245, 255, 0.3);
+      border-radius: 16px;
+      padding: 2rem;
+      text-align: center;
+      max-width: 400px;
+      position: relative;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: none;
+      border: none;
+      color: var(--color-text);
+      font-size: 1.5rem;
+      cursor: pointer;
+      font-family: var(--font-mono);
+    }
+
+    /* ── Responsive ──────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-title {
+        font-size: 2rem;
+      }
+
+      .nav-menu {
+        gap: 1rem;
+      }
+
+      .panel-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <nav class="nav">
+      <!-- Logo text injected by app.js from TRACKER_CONFIG.appName -->
+      <div class="logo" id="app-logo">Whale Tracker</div>
+      <div class="nav-menu">
+        <div class="nav-item">Dashboard</div>
+        <div class="nav-item" onclick="showFeatureModal()">Analytics</div>
+        <div class="nav-item" onclick="showFeatureModal()">Alerts</div>
+        <div class="nav-item highlight" onclick="showFeatureModal()">Pro</div>
+      </div>
+    </nav>
+  </header>
+
+  <main class="main-container">
+
+    <section class="hero-section">
+      <h1 class="hero-title">Large Transaction Monitor</h1>
+      <!-- Tagline injected by app.js from TRACKER_CONFIG.appTagline -->
+      <p class="hero-subtitle" id="app-tagline">
+        Monitor large on-chain transactions across multiple blockchains
+      </p>
+    </section>
+
+    <section class="stats-grid">
+      <div class="stat-card">
+        <!-- Value updated by app.js via refreshStats() -->
+        <div class="stat-value pulse" id="stat-volume">--</div>
+        <div class="stat-label">Tracked Volume (24h)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-whales">--</div>
+        <div class="stat-label">Active Whales</div>
+      </div>
+      <div class="stat-card">
+        <!-- No accuracy claim — real data or configurable -->
+        <div class="stat-value" id="stat-chains">--</div>
+        <div class="stat-label">Supported Chains</div>
+      </div>
+    </section>
+
+    <section class="dashboard-grid">
+
+      <div class="main-panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Live Whale Movements</h2>
+          <!-- Chain tabs injected by app.js from TRACKER_CONFIG.chains -->
+          <div class="chain-tabs" id="chain-tabs"></div>
+        </div>
+        <!-- Transaction rows injected by app.js via renderTransactions() -->
+        <div class="whale-list" id="whale-list"></div>
+      </div>
+
+      <div class="side-panel">
+
+        <div class="ai-insights">
+          <h3 class="panel-title">Insights</h3>
+          <!-- Insight rows injected by app.js via renderInsights() -->
+          <div id="ai-insights-list"></div>
+        </div>
+
+        <div class="feature-panel">
+          <h3 class="panel-title">Advanced Features</h3>
+
+          <div class="feature-item" onclick="showFeatureModal()">
+            <span>Portfolio Reconstruction</span>
+            <span class="badge-soon">COMING SOON</span>
+          </div>
+          <div class="feature-item" onclick="showFeatureModal()">
+            <span>Predictive ML Models</span>
+            <span class="badge-soon">COMING SOON</span>
+          </div>
+          <div class="feature-item" onclick="showFeatureModal()">
+            <span>Wallet Clustering</span>
+            <span class="badge-soon">COMING SOON</span>
+          </div>
+          <div class="feature-item" onclick="showFeatureModal()">
+            <span>Real-time Alerts</span>
+            <span class="badge-soon">COMING SOON</span>
+          </div>
+          <div class="feature-item" onclick="showFeatureModal()">
+            <span>Social Sentiment</span>
+            <span class="badge-soon">COMING SOON</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Feature placeholder modal -->
+  <div id="feature-modal" class="modal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="hideFeatureModal()">&times;</button>
+      <h3 style="color: var(--color-primary); margin-bottom: 1rem;">Feature Coming Soon</h3>
+      <p style="margin-bottom: 1.5rem;">This feature is not yet implemented in the template.</p>
+      <p style="opacity: 0.7; font-size: 0.9rem;">
+        Wire a real DataSource adapter (see <code>src/data-source.js</code>) to unlock live data.
+      </p>
+    </div>
+  </div>
+
+  <!--
+    Script load order matters:
+      1. config.js   — sets window.TRACKER_CONFIG
+      2. data-source.js — sets window.WHALE_DATA_SOURCE (MockDataSource default)
+         To swap adapters: add your own <script> between 2 and 3 that sets
+         window.WHALE_DATA_SOURCE before app.js reads it.
+      3. app.js      — reads both globals, wires the UI
+  -->
+  <script src="src/config.js"></script>
+  <script src="src/data-source.js"></script>
+  <script src="src/app.js"></script>
+
+</body>
+</html>

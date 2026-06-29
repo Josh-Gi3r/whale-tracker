@@ -1,0 +1,19 @@
+# Environment secrets
+.env
+.env.local
+.env.production
+
+# OS artefacts
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Build output (if you add a bundler later)
+dist/
+build/
+
+# Dependencies (if you add npm later)
+node_modules/
